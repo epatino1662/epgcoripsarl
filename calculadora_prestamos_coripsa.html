@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#1a6dd4;--blue2:#2fb3e8;--green:#00c896;--orange:#f97316;--red:#dc2626;--gold:#f0a500;}
+  body{min-height:100vh;background:linear-gradient(160deg,#1e3a5f 0%,#2a5298 55%,#1a3a6e 100%);font-family:'Source Sans 3',sans-serif;color:#fff;padding:14px 10px 30px;position:relative;overflow-x:hidden;}
+  body::before{content:'';position:fixed;top:-80px;right:-80px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(20,100,220,.14) 0%,transparent 70%);pointer-events:none;}
+  body::after{content:'';position:fixed;bottom:-60px;left:-60px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(0,180,120,.11) 0%,transparent 70%);pointer-events:none;}
+  .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1;}
+  .brand-bar{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:13px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(10px);flex-wrap:wrap;gap:8px;}
+  .brand-left{display:flex;align-items:center;gap:12px;}
+  .brand-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 4px 14px rgba(20,85,200,.38);flex-shrink:0;}
+  .brand-name{font-family:'Lora',serif;font-size:clamp(15px,3vw,20px);font-weight:700;letter-spacing:-0.3px;}
+  .brand-sub{font-size:9.5px;color:rgba(255,255,255,.75);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .stamp-box{text-align:right;}
+  .stamp-lbl{font-size:8.5px;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;}
+  .stamp-val{font-size:10.5px;font-family:monospace;margin-top:2px;}
+  .tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:4px;margin-bottom:14px;}
+  .tab{flex:1;padding:9px 5px;border-radius:9px;border:none;cursor:pointer;font-size:11.5px;font-weight:700;font-family:'Source Sans 3',sans-serif;transition:all .2s;background:transparent;color:rgba(255,255,255,.7);}
+  .tab.active{background:linear-gradient(135deg,var(--blue),#0066bb);color:#fff;box-shadow:0 4px 12px rgba(20,85,200,.32);}
+  .card{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:17px;margin-bottom:11px;backdrop-filter:blur(8px);}
+  .card-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:13px;display:flex;align-items:center;gap:7px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--green));flex-shrink:0;}
+  .tipo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:7px;}
+  .tipo-btn{padding:10px 6px;border-radius:12px;border:1px solid rgba(255,255,255,.07);cursor:pointer;text-align:center;transition:all .18s;background:rgba(255,255,255,.04);color:#fff;font-family:'Source Sans 3',sans-serif;width:100%;}
+  .tipo-btn:hover{border-color:rgba(20,85,200,.35);background:rgba(20,85,200,.12);}
+  .tipo-btn.active{background:linear-gradient(135deg,rgba(20,85,200,.28),rgba(0,200,150,.13));border-color:rgba(20,85,200,.55);box-shadow:0 0 16px rgba(20,85,200,.22);}
+  .tipo-icon{font-size:18px;display:block;margin-bottom:3px;}
+  .tipo-label{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.85);display:block;margin-bottom:2px;}
+  .tipo-btn.active .tipo-label{color:#fff;}
+  .tipo-tasa{font-size:10px;color:var(--blue2);font-weight:600;}
+  .tipo-btn.active .tipo-tasa{color:#5bc8f5;}
+  .tipo-badge{font-size:8.5px;color:var(--gold);display:block;margin-top:2px;}
+  .lbl-row{display:flex;justify-content:space-between;color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;}
+  .lbl-val{color:#fff;font-family:'Lora',serif;font-size:12.5px;font-weight:700;}
+  .input-wrap{position:relative;}
+  .input-pfx{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:13px;font-weight:700;pointer-events:none;font-family:'Lora',serif;}
+  input[type=number]{width:100%;padding:10px 10px 10px 38px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#fff;font-size:16px;font-weight:700;font-family:'Lora',serif;outline:none;transition:border-color .2s;}
+  input[type=number]:focus{border-color:rgba(20,85,200,.5);}
+  input[type=number]:disabled{background:rgba(255,255,255,.02);color:rgba(255,255,255,.3);cursor:not-allowed;}
+  input[type=range]{width:100%;margin-top:7px;accent-color:var(--blue);cursor:pointer;height:4px;}
+  .range-labels{display:flex;justify-content:space-between;color:rgba(255,255,255,.6);font-size:9px;margin-top:3px;}
+  .warn{font-size:10px;color:var(--gold);margin-top:5px;}
+  .mb18{margin-bottom:18px;}
+  .results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:13px;}
+  .r-main{grid-column:1/-1;background:linear-gradient(135deg,rgba(20,85,200,.3),rgba(0,180,120,.16));border:1px solid rgba(20,85,200,.38);border-radius:14px;padding:15px;text-align:center;}
+  .r-sec{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px;text-align:center;}
+  .r-lbl{color:rgba(255,255,255,.82);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+  .r-val-main{font-size:clamp(24px,5vw,36px);font-weight:700;letter-spacing:-1px;font-family:'Lora',serif;}
+  .r-val-sec{font-size:19px;font-weight:700;color:var(--blue2);font-family:'Lora',serif;}
+  .r-sub{font-size:9px;color:rgba(255,255,255,.6);margin-top:2px;}
+  .bar-title{color:rgba(255,255,255,.42);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+  .bar-wrap{display:flex;height:8px;border-radius:7px;overflow:hidden;margin-bottom:7px;}
+  .bar-cap{background:linear-gradient(90deg,var(--blue),#0055bb);transition:width .5s;}
+  .bar-int{background:linear-gradient(90deg,var(--orange),var(--red));transition:width .5s;}
+  .legend{display:flex;gap:14px;font-size:10px;color:rgba(255,255,255,.85);}
+  .leg-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle;}
+  .export-row{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;}
+  .btn-excel{flex:1;min-width:130px;padding:11px 12px;border-radius:11px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Source Sans 3',sans-serif;background:linear-gradient(135deg,#1a7a3f,#0f5c2c);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .2s;}
+  .btn-pdf{flex:1;min-width:130px;padding:11px 12px;border-radius:11px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Source Sans 3',sans-serif;background:linear-gradient(135deg,#aa2e25,#7a1f18);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .2s;}
+  .btn-excel:hover,.btn-pdf:hover{opacity:.85;}
+  .table-info{display:flex;gap:9px;margin-bottom:14px;padding:10px 14px;border-radius:11px;background:rgba(20,85,200,.08);border:1px solid rgba(20,85,200,.2);flex-wrap:wrap;}
+  .tinfo-item{flex:1;min-width:80px;text-align:center;}
+  .tinfo-lbl{color:rgba(255,255,255,.72);font-size:9px;margin-bottom:2px;}
+  .tinfo-val{color:#fff;font-weight:700;font-size:12.5px;font-family:'Lora',serif;}
+  .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08);}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  thead tr{background:rgba(255,255,255,.06);}
+  thead th{padding:9px 10px;text-align:right;color:rgba(255,255,255,.42);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.08);}
+  thead th:first-child{text-align:center;}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
+  tbody td{padding:7px 10px;text-align:right;color:rgba(255,255,255,.70);font-family:'Lora',serif;border-bottom:1px solid rgba(255,255,255,.04);}
+  tbody td:first-child{text-align:center;color:var(--blue2);font-weight:700;}
+  .td-cap{color:#5bc8f5!important;}
+  .td-int{color:var(--orange)!important;}
+  tfoot tr{background:rgba(20,85,200,.25);}
+  tfoot td{padding:9px 10px;text-align:right;color:rgba(255,255,255,.52);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+  tfoot td:first-child{text-align:center;color:#fff;}
+  tfoot .tf-total{color:#fff;}
+  tfoot .tf-cap{color:#5bc8f5;}
+  tfoot .tf-int{color:var(--orange);}
+  .comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:9px;}
+  .comp-card{padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);position:relative;transition:border-color .2s;}
+  .comp-card.best{border-color:rgba(0,200,150,.42);background:rgba(0,200,150,.07);}
+  .comp-badge{position:absolute;top:8px;right:8px;background:var(--green);color:#fff;font-size:7.5px;font-weight:700;padding:2px 6px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;}
+  .comp-icon{font-size:18px;margin-bottom:4px;}
+  .comp-name{font-size:12.5px;font-weight:700;color:#fff;margin-bottom:8px;}
+  .comp-stat{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:3px;}
+  .comp-l{color:rgba(255,255,255,.75);}
+  .comp-r{color:#fff;font-weight:700;}
+  .comp-r.best-val{color:var(--green);}
+  .comp-r.blue-val{color:var(--blue2);}
+  .comp-note{font-size:9px;color:var(--gold);margin-bottom:5px;}
+  .comp-footer{margin-top:11px;font-size:9px;color:rgba(255,255,255,.6);text-align:center;}
+  .app-footer{text-align:center;margin-top:16px;font-size:10px;}
+  .footer-nota{color:#ffd87a;font-weight:700;font-size:10.5px;margin-bottom:5px;}
+  .footer-copy{color:rgba(255,255,255,.65);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand-bar">
+    <div class="brand-left">
+      <div class="brand-icon">🏦</div>
+      <div>
+        <div class="brand-name">Cooperativa Coripsa R.L.</div>
+        <div class="brand-sub">Calculadora de Préstamos</div>
+      </div>
+    </div>
+    <div class="stamp-box">
+      <div class="stamp-lbl">Fecha y hora del cálculo</div>
+      <div class="stamp-val" id="stamp">—</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('calc',this)">🧮 Calculadora</button>
+    <button class="tab" onclick="switchTab('tabla',this)">📋 Amortización</button>
+    <button class="tab" onclick="switchTab('comparar',this)">⚖️ Comparar Tipos</button>
+  </div>
+
+  <div id="tab-calc" class="tab-content active">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Tipo de Préstamo</div>
+      <div class="tipo-grid" id="tipo-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Parámetros del Préstamo</div>
+      <div class="mb18">
+        <div class="lbl-row"><span>Monto Solicitado</span><span class="lbl-val" id="lbl-monto">B/ 5,000.00</span></div>
+        <div class="input-wrap">
+          <span class="input-pfx">B/</span>
+          <input type="number" id="inp-monto" value="5000" min="100" max="100000" oninput="onMontoChange(this.value)"/>
+        </div>
+        <input type="range" id="range-monto" min="100" max="50000" step="100" value="5000" oninput="onRangoMonto(this.value)"/>
+        <div class="range-labels"><span>B/ 100</span><span>B/ 50,000</span></div>
+        <div class="warn" id="warn-fijo" style="display:none">⚠️ El Préstamo Rápida Recuperación se otorga por monto fijo de B/ 500.00</div>
+      </div>
+      <div class="mb18">
+        <div class="lbl-row"><span>Plazo</span><span class="lbl-val" id="lbl-plazo">24 meses · 2.0 años</span></div>
+        <div class="input-wrap" style="margin-bottom:8px;">
+          <span class="input-pfx" style="font-size:10.5px;">Mes</span>
+          <input type="number" id="inp-plazo" value="24" min="1" max="130" style="padding:10px 50px 10px 46px;font-size:15px;" oninput="onPlazoNumChange(this.value)"/>
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:10.5px;pointer-events:none;">meses</span>
+        </div>
+        <input type="range" id="range-plazo" min="1" max="60" step="1" value="24" oninput="onPlazoCambio(this.value)"/>
+        <div class="range-labels"><span>1 mes</span><span id="lbl-plazo-max">60 meses máx.</span></div>
+      </div>
+      <div>
+        <div class="lbl-row"><span>Tasa de Interés Anual</span><span class="lbl-val" id="lbl-tasa">18.00%</span></div>
+        <input type="range" id="range-tasa" min="1" max="30" step="0.1" value="18" oninput="onTasaCambio(this.value)"/>
+        <div class="range-labels"><span>1%</span><span>30%</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Resumen Financiero</div>
+      <div class="results-grid">
+        <div class="r-main">
+          <div class="r-lbl">Cuota Mensual</div>
+          <div class="r-val-main" id="res-cuota">B/ 0.00</div>
+          <div class="r-sub">Pago fijo cada mes</div>
+        </div>
+        <div class="r-sec">
+          <div class="r-lbl">Total a Pagar</div>
+          <div class="r-val-sec" id="res-total">B/ 0.00</div>
+          <div class="r-sub">Capital + intereses</div>
+        </div>
+        <div class="r-sec">
+          <div class="r-lbl">Total Intereses</div>
+          <div class="r-val-sec" id="res-intereses" style="color:var(--orange)">B/ 0.00</div>
+          <div class="r-sub" id="res-pct-int">0% del total</div>
+        </div>
+      </div>
+      <div class="bar-title">Distribución del pago</div>
+      <div class="bar-wrap">
+        <div class="bar-cap" id="bar-cap" style="width:50%"></div>
+        <div class="bar-int" id="bar-int" style="width:50%"></div>
+      </div>
+      <div class="legend">
+        <span><span class="leg-dot" style="background:var(--blue)"></span>Capital <span id="leg-cap-pct">50%</span></span>
+        <span><span class="leg-dot" style="background:var(--orange)"></span>Intereses <span id="leg-int-pct">50%</span></span>
+      </div>
+      <div class="export-row">
+        <button class="btn-excel" onclick="exportarExcel()">📊 Exportar a Excel</button>
+        <button class="btn-pdf" onclick="exportarPDF()">🖨️ Exportar / Imprimir PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-tabla" class="tab-content">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Tabla de Amortización — <span id="tabla-tipo-lbl">Corriente</span></div>
+      <div class="table-info">
+        <div class="tinfo-item"><div class="tinfo-lbl">Préstamo</div><div class="tinfo-val" id="ti-monto">—</div></div>
+        <div class="tinfo-item"><div class="tinfo-lbl">Tasa</div><div class="tinfo-val" id="ti-tasa">—</div></div>
+        <div class="tinfo-item"><div class="tinfo-lbl">Plazo</div><div class="tinfo-val" id="ti-plazo">—</div></div>
+        <div class="tinfo-item"><div class="tinfo-lbl">Cuota</div><div class="tinfo-val" id="ti-cuota">—</div></div>
+        <div class="tinfo-item"><div class="tinfo-lbl">Total</div><div class="tinfo-val" id="ti-total">—</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mes</th><th>Cuota (B/)</th><th>Capital (B/)</th><th>Interés (B/)</th><th>Saldo (B/)</th></tr></thead>
+          <tbody id="tbody-amort"></tbody>
+          <tfoot><tr>
+            <td>TOTAL</td>
+            <td class="tf-total" id="tf-total">—</td>
+            <td class="tf-cap" id="tf-cap">—</td>
+            <td class="tf-int" id="tf-int">—</td>
+            <td>—</td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <div class="export-row">
+        <button class="btn-excel" onclick="exportarExcel()">📊 Exportar a Excel</button>
+        <button class="btn-pdf" onclick="exportarPDF()">🖨️ Exportar / Imprimir PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-comparar" class="tab-content">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Comparación de Tipos — <span id="comp-header">B/ 5,000.00 a 24 meses</span></div>
+      <div class="comp-grid" id="comp-grid"></div>
+      <div class="comp-footer">* Solo tipos con plazo disponible ≥ <span id="comp-plazo-note">24</span> meses · PRR usa monto fijo de B/ 500.00</div>
+    </div>
+  </div>
+
+  <div class="app-footer">
+    <div class="footer-nota">⚠️ Nota: Este cálculo es una simulación y no incluye Capitalización, Manejo, Notaría y Seguro.</div>
+    <div class="footer-copy">Cooperativa Coripsa R.L. © <span id="yr"></span> · Simulación orientativa · Tasas y condiciones sujetas a aprobación crediticia.</div>
+  </div>
+</div>
+
+<script>
+const TIPOS=[
+  {id:"corriente",label:"Corriente",tasa:18.00,plazoMax:130,icon:"💳",montoFijo:null},
+  {id:"especial",label:"Especial",tasa:7.80,plazoMax:130,icon:"⭐",montoFijo:null},
+  {id:"urgencias",label:"Urgencias",tasa:17.40,plazoMax:26,icon:"⚡",montoFijo:null},
+  {id:"automatico",label:"Automático",tasa:17.40,plazoMax:130,icon:"🔄",montoFijo:null},
+  {id:"prr",label:"Rápida Recuperación",tasa:5.00,plazoMax:24,icon:"🚀",montoFijo:500},
+  {id:"terceros",label:"A Terceros",tasa:22.00,plazoMax:20,icon:"🤝",montoFijo:null},
+];
+let state={tipo:TIPOS[0],monto:5000,plazo:24,tasa:18.00};
+const fmtB=n=>"B/ "+n.toLocaleString("es-PA",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct=n=>n.toFixed(2)+"%";
+function getNow(){const d=new Date();return d.toLocaleDateString("es-PA",{day:"2-digit",month:"long",year:"numeric"})+"  "+d.toLocaleTimeString("es-PA",{hour:"2-digit",minute:"2-digit",second:"2-digit"});}
+function calcAmort(monto,tasaAnual,plazo){
+  const r=tasaAnual/100/12;
+  const cuota=r===0?monto/plazo:(monto*r*Math.pow(1+r,plazo))/(Math.pow(1+r,plazo)-1);
+  let tabla=[],saldo=monto;
+  for(let i=1;i<=plazo;i++){const interes=saldo*r;const capital=cuota-interes;saldo-=capital;tabla.push({mes:i,cuota,capital,interes,saldo:Math.max(0,saldo)});}
+  return{cuota,tabla};
+}
+function switchTab(id,el){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='tabla')renderTabla();
+  if(id==='comparar')renderComparar();
+}
+function renderTipos(){
+  const grid=document.getElementById('tipo-grid');grid.innerHTML='';
+  TIPOS.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='tipo-btn'+(state.tipo.id===t.id?' active':'');
+    btn.innerHTML=`<span class="tipo-icon">${t.icon}</span><span class="tipo-label">${t.label}</span><span class="tipo-tasa">${t.tasa}% anual</span>${t.montoFijo?`<span class="tipo-badge">Fijo: ${fmtB(t.montoFijo)}</span>`:''}`;
+    btn.onclick=()=>{setTipo(t);};grid.appendChild(btn);
+  });
+}
+function setTipo(t){
+  state.tipo=t;state.tasa=t.tasa;
+  if(state.plazo>t.plazoMax)state.plazo=t.plazoMax;
+  if(t.montoFijo){state.monto=t.montoFijo;}
+  syncUI();renderTipos();recalc();
+}
+function syncUI(){
+  const t=state.tipo;
+  document.getElementById('inp-monto').value=state.monto;
+  document.getElementById('inp-monto').disabled=!!t.montoFijo;
+  document.getElementById('range-monto').value=Math.min(state.monto,50000);
+  document.getElementById('range-monto').disabled=!!t.montoFijo;
+  document.getElementById('warn-fijo').style.display=t.montoFijo?'block':'none';
+  document.getElementById('lbl-monto').textContent=fmtB(state.monto);
+  document.getElementById('range-plazo').max=t.plazoMax;
+  document.getElementById('range-plazo').value=state.plazo;
+  document.getElementById('inp-plazo').value=state.plazo;
+  document.getElementById('inp-plazo').max=t.plazoMax;
+  document.getElementById('lbl-plazo').textContent=`${state.plazo} meses · ${(state.plazo/12).toFixed(1)} años`;
+  document.getElementById('lbl-plazo-max').textContent=`${t.plazoMax} meses máx.`;
+  document.getElementById('range-tasa').value=state.tasa;
+  document.getElementById('lbl-tasa').textContent=fmtPct(state.tasa);
+}
+function onMontoChange(v){
+  if(state.tipo.montoFijo)return;
+  const n=parseFloat(v);
+  if(!isNaN(n)&&n>0){state.monto=n;recalc();updateStamp();}
+  document.getElementById('lbl-monto').textContent=fmtB(isNaN(n)?0:n);
+  document.getElementById('range-monto').value=Math.min(isNaN(n)?0:n,50000);
+}
+function onRangoMonto(v){
+  if(state.tipo.montoFijo)return;
+  state.monto=+v;
+  document.getElementById('inp-monto').value=v;
+  document.getElementById('lbl-monto').textContent=fmtB(+v);
+  recalc();updateStamp();
+}
+function onPlazoCambio(v){
+  state.plazo=+v;
+  document.getElementById('inp-plazo').value=v;
+  document.getElementById('lbl-plazo').textContent=`${v} meses · ${(+v/12).toFixed(1)} años`;
+  recalc();updateStamp();
+}
+function onPlazoNumChange(v){
+  const t=state.tipo;let n=parseInt(v);
+  if(isNaN(n)||n<1)return;
+  if(n>t.plazoMax)n=t.plazoMax;
+  state.plazo=n;
+  const rMax=parseInt(document.getElementById('range-plazo').max);
+  document.getElementById('inp-plazo').value=n;
+  document.getElementById('range-plazo').value=Math.min(n,rMax);
+  document.getElementById('lbl-plazo').textContent=`${n} meses · ${(n/12).toFixed(1)} años`;
+  recalc();updateStamp();
+}
+function onTasaCambio(v){
+  state.tasa=+v;
+  document.getElementById('lbl-tasa').textContent=fmtPct(+v);
+  recalc();updateStamp();
+}
+function recalc(){
+  const{cuota,tabla}=calcAmort(state.monto,state.tasa,state.plazo);
+  const totalPagar=cuota*state.plazo;const totalInt=totalPagar-state.monto;
+  const pctCap=(state.monto/totalPagar*100);const pctInt=(totalInt/totalPagar*100);
+  document.getElementById('res-cuota').textContent=fmtB(cuota);
+  document.getElementById('res-total').textContent=fmtB(totalPagar);
+  document.getElementById('res-intereses').textContent=fmtB(totalInt);
+  document.getElementById('res-pct-int').textContent=fmtPct(pctInt)+' del total';
+  document.getElementById('bar-cap').style.width=pctCap.toFixed(1)+'%';
+  document.getElementById('bar-int').style.width=pctInt.toFixed(1)+'%';
+  document.getElementById('leg-cap-pct').textContent=fmtPct(pctCap);
+  document.getElementById('leg-int-pct').textContent=fmtPct(pctInt);
+  state._cuota=cuota;state._tabla=tabla;state._totalPagar=totalPagar;state._totalInt=totalInt;
+}
+function renderTabla(){
+  const{cuota,tabla}=calcAmort(state.monto,state.tasa,state.plazo);
+  const totalPagar=cuota*state.plazo;const totalInt=totalPagar-state.monto;
+  document.getElementById('tabla-tipo-lbl').textContent=state.tipo.label;
+  document.getElementById('ti-monto').textContent=fmtB(state.monto);
+  document.getElementById('ti-tasa').textContent=fmtPct(state.tasa)+' anual';
+  document.getElementById('ti-plazo').textContent=state.plazo+' meses';
+  document.getElementById('ti-cuota').textContent=fmtB(cuota);
+  document.getElementById('ti-total').textContent=fmtB(totalPagar);
+  document.getElementById('tf-total').textContent=fmtB(totalPagar);
+  document.getElementById('tf-cap').textContent=fmtB(state.monto);
+  document.getElementById('tf-int').textContent=fmtB(totalInt);
+  document.getElementById('tbody-amort').innerHTML=tabla.map(r=>`<tr><td>${r.mes}</td><td>${fmtB(r.cuota)}</td><td class="td-cap">${fmtB(r.capital)}</td><td class="td-int">${fmtB(r.interes)}</td><td>${fmtB(r.saldo)}</td></tr>`).join('');
+}
+function renderComparar(){
+  const plazo=state.plazo;
+  document.getElementById('comp-header').textContent=`${fmtB(state.monto)} a ${plazo} meses`;
+  document.getElementById('comp-plazo-note').textContent=plazo;
+  const eligible=TIPOS.filter(t=>plazo<=t.plazoMax);
+  const normalCuotas=eligible.filter(t=>!t.montoFijo).map(t=>({id:t.id,c:calcAmort(state.monto,t.tasa,plazo).cuota}));
+  const minCuota=normalCuotas.length?Math.min(...normalCuotas.map(x=>x.c)):Infinity;
+  document.getElementById('comp-grid').innerHTML=eligible.map(t=>{
+    const m=t.montoFijo||state.monto;const{cuota:c}=calcAmort(m,t.tasa,plazo);
+    const tot=c*plazo,inte=tot-m;const isBest=!t.montoFijo&&Math.abs(c-minCuota)<0.001;
+    return`<div class="comp-card ${isBest?'best':''}">${isBest?'<span class="comp-badge">✓ Mejor</span>':''}<div class="comp-icon">${t.icon}</div><div class="comp-name">${t.label}</div>${t.montoFijo?`<div class="comp-note">Monto fijo: ${fmtB(t.montoFijo)}</div>`:''}<div class="comp-stat"><span class="comp-l">Tasa</span><span class="comp-r">${t.tasa}%</span></div><div class="comp-stat"><span class="comp-l">Cuota</span><span class="comp-r ${isBest?'best-val':'blue-val'}">${fmtB(c)}</span></div><div class="comp-stat"><span class="comp-l">Intereses</span><span class="comp-r">${fmtB(inte)}</span></div><div class="comp-stat"><span class="comp-l">Total</span><span class="comp-r">${fmtB(tot)}</span></div></div>`;
+  }).join('');
+}
+function exportarExcel(){
+  if(typeof XLSX==='undefined'){alert('La librería Excel no está disponible en este modo. Descarga el archivo HTML para usar esta función.');return;}
+  const{tipo,monto,plazo,tasa,_cuota:cuota,_tabla:tabla,_totalPagar:totalPagar,_totalInt:totalInt}=state;
+  const calcTime=getNow();
+  const rows=[["COOPERATIVA CORIPSA R.L."],["Simulación de Préstamo"],["Fecha y Hora: "+calcTime],[],["DATOS DEL PRÉSTAMO"],["Tipo de Préstamo:",tipo.label],["Monto Solicitado (B/):",monto],["Tasa Anual:",tasa+"%"],["Plazo:",plazo+" meses"],[],["RESUMEN"],["Cuota Mensual (B/):",+cuota.toFixed(2)],["Total a Pagar (B/):",+totalPagar.toFixed(2)],["Total Intereses (B/):",+totalInt.toFixed(2)],[],["TABLA DE AMORTIZACIÓN"],["Mes","Cuota (B/)","Capital (B/)","Interés (B/)","Saldo (B/)"],...tabla.map(r=>[r.mes,+r.cuota.toFixed(2),+r.capital.toFixed(2),+r.interes.toFixed(2),+r.saldo.toFixed(2)]),[], ["","TOTALES →",+totalPagar.toFixed(2),+monto.toFixed(2),+totalInt.toFixed(2)]];
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"]=[{wch:8},{wch:20},{wch:16},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,"Simulación");
+  XLSX.writeFile(wb,`CORIPSA_${tipo.label.replace(/ /g,"_")}_${plazo}meses.xlsx`);
+}
+function exportarPDF(){
+  const{tipo,monto,plazo,tasa,_cuota:cuota,_tabla:tabla,_totalPagar:totalPagar,_totalInt:totalInt}=state;
+  const calcTime=getNow();
+  const pctCap=(monto/totalPagar*100).toFixed(1);const pctInt=(totalInt/totalPagar*100).toFixed(1);
+  const fB=n=>"B/ "+n.toLocaleString("es-PA",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fP=n=>n.toFixed(2)+"%";
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Préstamo ${tipo.label} - CORIPSA</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;font-size:10.5pt;color:#1a1a2e;background:#fff}.page{max-width:760px;margin:0 auto;padding:28px 38px}.hdr{border-bottom:3px solid #103070;padding-bottom:13px;margin-bottom:17px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px}.coop{font-size:19pt;font-weight:700;color:#103070}.coop-sub{font-size:9.5pt;color:#555;margin-top:2px}.stamp{text-align:right}.stamp-lbl{font-size:8pt;color:#888;letter-spacing:1px;text-transform:uppercase}.stamp-val{font-size:9pt;color:#333;margin-top:1px;font-family:monospace}.sec{font-size:8.5pt;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#103070;margin:15px 0 7px;padding-bottom:3px;border-bottom:1px solid #c8d4ec}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px}.icard{background:#f0f4fc;border-radius:7px;padding:8px 11px;border-left:3px solid #103070}.ilbl{font-size:7.5pt;color:#666;margin-bottom:1px}.ival{font-size:11.5pt;font-weight:700;color:#103070}.res{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;margin-bottom:13px}.rmain{background:#103070;color:#fff;border-radius:9px;padding:12px 14px}.rmain .rl{font-size:7.5pt;opacity:.65;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}.rmain .rv{font-size:17pt;font-weight:700}.rsec{background:#f0f4fc;border-radius:9px;padding:12px 14px;border:1px solid #d0daea}.rsec .rl{font-size:7.5pt;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}.rsec .rv{font-size:13pt;font-weight:700;color:#103070}.bar{display:flex;height:8px;border-radius:6px;overflow:hidden;margin:9px 0 5px}.bar-c{background:#103070}.bar-i{background:#c0392b}.leg{display:flex;gap:18px;font-size:8pt;color:#555}.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}table{width:100%;border-collapse:collapse;font-size:9pt;margin-top:4px}thead tr{background:#103070;color:#fff}thead th{padding:7px 9px;text-align:right;font-size:7.5pt;letter-spacing:.5px;text-transform:uppercase;font-weight:600}thead th:first-child{text-align:center}tbody tr:nth-child(even){background:#f5f7fc}tbody td{padding:5px 9px;text-align:right;border-bottom:1px solid #e8edf8}tbody td:first-child{text-align:center;color:#103070;font-weight:700}.cap{color:#1a6e3a}.int{color:#c0392b}tfoot tr{background:#103070;color:#fff;font-weight:700}tfoot td{padding:7px 9px;text-align:right}tfoot td:first-child{text-align:center}.foot{margin-top:20px;border-top:1px solid #d0daea;padding-top:8px;font-size:7.5pt;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page"><div class="hdr"><div><div class="coop">Cooperativa Coripsa R.L.</div><div class="coop-sub">Simulación de Préstamo — ${tipo.label}</div></div><div class="stamp"><div class="stamp-lbl">Fecha y hora del cálculo</div><div class="stamp-val">${calcTime}</div></div></div><div class="sec">Parámetros del Préstamo</div><div class="grid3"><div class="icard"><div class="ilbl">Tipo</div><div class="ival">${tipo.label}</div></div><div class="icard"><div class="ilbl">Monto Solicitado</div><div class="ival">${fB(monto)}</div></div><div class="icard"><div class="ilbl">Tasa Anual</div><div class="ival">${fP(tasa)}</div></div><div class="icard"><div class="ilbl">Plazo</div><div class="ival">${plazo} meses</div></div><div class="icard"><div class="ilbl">Tasa Mensual</div><div class="ival">${fP(tasa/12)}</div></div><div class="icard"><div class="ilbl">Período</div><div class="ival">${(plazo/12).toFixed(1)} años</div></div></div><div class="sec">Resumen Financiero</div><div class="res"><div class="rmain"><div class="rl">Cuota Mensual</div><div class="rv">${fB(cuota)}</div></div><div class="rsec"><div class="rl">Total a Pagar</div><div class="rv">${fB(totalPagar)}</div></div><div class="rsec"><div class="rl">Total Intereses</div><div class="rv" style="color:#c0392b">${fB(totalInt)}</div></div></div><div class="bar"><div class="bar-c" style="width:${pctCap}%"></div><div class="bar-i" style="width:${pctInt}%"></div></div><div class="leg"><span><span class="dot" style="background:#103070"></span>Capital ${pctCap}%</span><span><span class="dot" style="background:#c0392b"></span>Intereses ${pctInt}%</span></div><div class="sec" style="margin-top:16px">Tabla de Amortización</div><table><thead><tr><th>Mes</th><th>Cuota (B/)</th><th>Capital (B/)</th><th>Interés (B/)</th><th>Saldo (B/)</th></tr></thead><tbody>${tabla.map(r=>`<tr><td>${r.mes}</td><td>${fB(r.cuota)}</td><td class="cap">${fB(r.capital)}</td><td class="int">${fB(r.interes)}</td><td>${fB(r.saldo)}</td></tr>`).join('')}</tbody><tfoot><tr><td>TOTAL</td><td>${fB(totalPagar)}</td><td>${fB(monto)}</td><td>${fB(totalInt)}</td><td>—</td></tr></tfoot></table><div class="foot"><span>Cooperativa Coripsa R.L. — Simulación orientativa, sujeta a aprobación crediticia.</span><span>Calculado: ${calcTime}</span></div></div><script>window.addEventListener("load",function(){setTimeout(function(){window.print();},400);});<\/script></body></html>`;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+function updateStamp(){document.getElementById('stamp').textContent=getNow();}
+document.getElementById('yr').textContent=new Date().getFullYear();
+updateStamp();setInterval(updateStamp,30000);
+renderTipos();syncUI();recalc();
+</script>
+</body>
+</html>
